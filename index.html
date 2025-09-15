@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家中空調控制</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9f9f9;
+      text-align: center;
+      padding: 2rem;
+    }
+    .temp {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    button {
+      margin: 0.5rem;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background-color: #45a049; }
+    #status {
+      margin-top: 1rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>家中空調控制</h1>
+  <div class="temp">溫度：<span id="temp">--</span> °C</div>
+
+  <button onclick="sendCommand('power_on')">電源開機</button>
+  <button onclick="sendCommand('power_off')">電源關機</button>
+  <button onclick="sendCommand('favorite')">我的最愛</button>
+  <button onclick="sendCommand('temp_up')">升溫</button>
+  <button onclick="sendCommand('temp_down')">降溫</button>
+
+  <div id="status">狀態：未連線</div>
+
+<script>
+  // ========== 你的 HiveMQ Cloud 參數 ==========
+  const MQTT_HOST = '96a2facec4d341fa8adddbe26ceb7c17.s1.eu.hivemq.cloud:8884/mqtt'; // 你的 Cluster URL
+  const MQTT_USER = 'Jeremy';
+  const MQTT_PASS = 'JeremyArduino123';
+
+  // ========== 連接 MQTT ==========
+  const options = {
+    username: MQTT_USER,
+    password: MQTT_PASS,
+    protocol: 'wss'
+  };
+
+  const client = mqtt.connect(MQTT_HOST, options);
+
+  client.on('connect', () => {
+    document.getElementById('status').innerText = '狀態：已連線';
+    client.subscribe('home/temp');
+    client.subscribe('home/ack'); // 接收 Arduino 回應
+  });
+
+  client.on('message', (topic, message) => {
+    if (topic === 'home/temp') {
+      document.getElementById('temp').innerText = message.toString();
+    }
+    if (topic === 'home/ack') {
+      // Arduino 回傳確認訊息
+      if (waitingAck) {
+        clearTimeout(waitingAck);
+        waitingAck = null;
+        document.getElementById('status').innerText = '狀態：指令成功 (' + lastCommand + ')';
+      }
+    }
+  });
+
+  client.on('error', err => {
+    document.getElementById('status').innerText = '狀態：連線錯誤';
+  });
+
+  let waitingAck = null;
+  let lastCommand = '';
+
+  function sendCommand(cmd) {
+    if (!client.connected) {
+      document.getElementById('status').innerText = '狀態：尚未連線';
+      return;
+    }
+    lastCommand = cmd;
+    client.publish('home/ac', cmd);
+    document.getElementById('status').innerText = '狀態：指令送出，等待回應 ('+cmd+')';
+
+    // 等待 Arduino 回應，超過 5 秒顯示失敗
+    if (waitingAck) clearTimeout(waitingAck);
+    waitingAck = setTimeout(() => {
+      document.getElementById('status').innerText = '狀態：指令失敗或逾時 ('+cmd+')';
+      waitingAck = null;
+    }, 5000);
+  }
+</script>
+
+</body>
+</html>
