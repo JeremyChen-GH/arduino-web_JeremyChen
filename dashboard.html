@@ -35,7 +35,7 @@
 </head>
 <body>
 
-  <h1>家中空調控制v1.0.3</h1>
+  <h1>家中空調控制v1.0.4</h1>
   <div class="temp">溫度：<span id="temp">--</span> °C</div>
 
   <button onclick="sendCommand('power_on')">電源開機</button>
@@ -50,8 +50,8 @@
   // ========== 你的 HiveMQ Cloud 參數 ==========
   const MQTT_HOST = 'wss://96a2facec4d341fa8adddbe26ceb7c17.s1.eu.hivemq.cloud:8884/mqtt'; // 你的 Cluster URL
   // 取得登入帳號密碼
-  const mqttUser = sessionStorage.getItem('mqttUser');
-  const mqttPass = sessionStorage.getItem('mqttPass');
+  const MQTT_USER = sessionStorage.getItem('mqttUser');
+  const MQTT_PASS = sessionStorage.getItem('mqttPass');
 
 
   // ========== 連接 MQTT ==========
@@ -111,6 +111,7 @@
 </body>
 
 </html>
+
 
 
 
